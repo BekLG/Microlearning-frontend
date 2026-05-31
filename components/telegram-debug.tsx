@@ -13,6 +13,9 @@ type DebugState = {
   version: string | null
   initDataLen: number | null
   initDataPrefix: string | null
+  tgWebAppDataLen: number | null
+  tgWebAppDataPrefix: string | null
+  sdkScriptPresent: boolean
   hasTgParams: boolean
 }
 
@@ -20,6 +23,8 @@ function getDebugState(): DebugState {
   const tg = window.Telegram
   const wa = tg?.WebApp
   const initData = wa?.initData
+  const params = new URLSearchParams(window.location.search)
+  const tgWebAppData = params.get("tgWebAppData")
 
   return {
     ts: new Date().toISOString(),
@@ -31,6 +36,9 @@ function getDebugState(): DebugState {
     version: wa?.version ?? null,
     initDataLen: typeof initData === "string" ? initData.length : null,
     initDataPrefix: typeof initData === "string" && initData.length > 0 ? initData.slice(0, 80) : null,
+    tgWebAppDataLen: typeof tgWebAppData === "string" ? tgWebAppData.length : null,
+    tgWebAppDataPrefix: typeof tgWebAppData === "string" && tgWebAppData.length > 0 ? tgWebAppData.slice(0, 80) : null,
+    sdkScriptPresent: Boolean(document.querySelector('script[src*="telegram-web-app.js"]')),
     hasTgParams: /tgWebApp/i.test(window.location.href),
   }
 }

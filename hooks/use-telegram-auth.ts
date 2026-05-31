@@ -6,14 +6,51 @@ import { ApiError, authTelegram, type TelegramAuthResponse } from "@/lib/api"
 const TOKEN_KEY = "microlearn:access_token"
 const USER_KEY = "microlearn:user"
 
+function getInitDataFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const tgWebAppData = params.get("tgWebAppData")
+    if (tgWebAppData && tgWebAppData.length > 0) return tgWebAppData
+  } catch {
+    // ignore
+  }
+  return null
+}
+
 function getInitDataNow() {
   const telegramInitData = window.Telegram?.WebApp?.initData
   if (telegramInitData && telegramInitData.length > 0) return telegramInitData
+
+  const urlInitData = getInitDataFromUrl()
+  if (urlInitData) return urlInitData
 
   const devInitData = process.env.NEXT_PUBLIC_DEV_TELEGRAM_INIT_DATA
   if (devInitData && devInitData.length > 0) return devInitData
 
   return null
+}
+
+function loadTelegramWebAppSdk(timeoutMs = 1500): Promise<void> {
+  if (window.Telegram?.WebApp) return Promise.resolve()
+
+  return new Promise((resolve) => {
+    const existing = document.querySelector('script[src*="telegram-web-app.js"]') as HTMLScriptElement | null
+    if (existing) {
+      const done = () => resolve()
+      existing.addEventListener("load", done, { once: true })
+      existing.addEventListener("error", done, { once: true })
+      window.setTimeout(done, timeoutMs)
+      return
+    }
+
+    const script = document.createElement("script")
+    script.src = "https://telegram.org/js/telegram-web-app.js?62"
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => resolve()
+    document.head.appendChild(script)
+    window.setTimeout(() => resolve(), timeoutMs)
+  })
 }
 
 async function waitForInitData(maxMs: number) {
@@ -61,6 +98,7 @@ export function useTelegramAuth() {
       }
       
       // Some clients populate initData slightly after mount.
+      await loadTelegramWebAppSdk(1500)
       window.Telegram?.WebApp?.ready?.()
       const initData = await waitForInitData(1500)
       if (!initData) {
