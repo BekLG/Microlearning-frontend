@@ -6,13 +6,23 @@ import { ApiError, authTelegram, type TelegramAuthResponse } from "@/lib/api"
 const TOKEN_KEY = "microlearn:access_token"
 const USER_KEY = "microlearn:user"
 
-function getInitData() {
+function getInitDataNow() {
   const telegramInitData = window.Telegram?.WebApp?.initData
   if (telegramInitData && telegramInitData.length > 0) return telegramInitData
 
   const devInitData = process.env.NEXT_PUBLIC_DEV_TELEGRAM_INIT_DATA
   if (devInitData && devInitData.length > 0) return devInitData
 
+  return null
+}
+
+async function waitForInitData(maxMs: number) {
+  const start = Date.now()
+  while (Date.now() - start < maxMs) {
+    const initData = getInitDataNow()
+    if (initData) return initData
+    await new Promise((r) => setTimeout(r, 100))
+  }
   return null
 }
 
@@ -49,8 +59,10 @@ export function useTelegramAuth() {
         }
         return
       }
-
-      const initData = getInitData()
+      
+      // Some clients populate initData slightly after mount.
+      window.Telegram?.WebApp?.ready?.()
+      const initData = await waitForInitData(1500)
       if (!initData) {
         if (!cancelled) {
           setError(

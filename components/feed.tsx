@@ -9,6 +9,7 @@ import { ThemeToggle } from "./theme-toggle"
 import { ApiError, getDocumentStatus, getLessons, uploadDocument, type LessonItem } from "@/lib/api"
 import { clearAuthStorage, useTelegramAuth } from "@/hooks/use-telegram-auth"
 import { toast } from "@/hooks/use-toast"
+import { TelegramDebug } from "@/components/telegram-debug"
 
 type TextPost = {
   type: "text"
@@ -186,6 +187,7 @@ export function Feed() {
 
       <UploadButton onUpload={handleUpload} />
       <ThemeToggle />
+      <TelegramDebug />
     </main>
   )
 }
